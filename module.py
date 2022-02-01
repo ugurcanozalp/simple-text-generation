@@ -14,7 +14,7 @@ class TextGeneration(pl.LightningModule):
 	def __init__(self,
 			arch: str = "t5-small",
 			masking_ids = [],
-			learning_rate: float = 5e-5,
+			learning_rate: float = 1e-4,
 			*args,
 			**kwargs
 		):
@@ -92,8 +92,8 @@ class TextGeneration(pl.LightningModule):
 	@staticmethod
 	def add_model_specific_args(parent_parser):
 		parser = ArgumentParser(parents=[parent_parser], add_help=False)
-		parser.add_argument('--arch', type=str, default='roberta-base')
-		parser.add_argument('--learning_rate', type=float, default=5e-5)
+		parser.add_argument('--arch', type=str, default='t5-small')
+		parser.add_argument('--learning_rate', type=float, default=2e-4)
 		return parser
 
 	@torch.no_grad()
@@ -103,7 +103,7 @@ class TextGeneration(pl.LightningModule):
 		attention_mask = input_["attention_mask"]
 		generated = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, 
 			max_length=64,
-    		early_stopping=True,
+    		early_stopping=False,
     		num_beams=10,
     		num_return_sequences=3,
     		no_repeat_ngram_size=2)
@@ -115,6 +115,6 @@ if __name__=="__main__":
 	model = TextGeneration(arch='t5-small')
 	model.load_state_dict(sd)
 	model.eval()
-	text = 'Russia | leader | Putin'
+	text = 'korea | gross spending | $100 && croatia | gross spending | 200$'
 	result = model.predict(text)
 	pprint.pprint(result)
