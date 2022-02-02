@@ -103,10 +103,10 @@ class TextGeneration(pl.LightningModule):
 		attention_mask = input_["attention_mask"]
 		generated = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, 
 			max_length=64,
-    		early_stopping=False,
-    		num_beams=10,
-    		num_return_sequences=3,
-    		no_repeat_ngram_size=2)
+			early_stopping=False,
+			num_beams=10,
+			num_return_sequences=10,
+			no_repeat_ngram_size=5)
 		return self.tokenizer.decode(generated[0])
 
 
@@ -115,6 +115,6 @@ if __name__=="__main__":
 	model = TextGeneration(arch='t5-small')
 	model.load_state_dict(sd)
 	model.eval()
-	text = 'korea | gross spending | $100 && croatia | gross spending | 200$'
+	text = 'Korea <extra_id_1> gross spending amount <extra_id_1> $100 <extra_id_0> Croatia <extra_id_1> gross spending amount <extra_id_1> $200' # && <extra_id_2> | date range | 01.01.2020 - 31.12.2021
 	result = model.predict(text)
 	pprint.pprint(result)
