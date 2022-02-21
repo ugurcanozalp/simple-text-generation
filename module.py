@@ -14,7 +14,7 @@ class TextGeneration(pl.LightningModule):
 	def __init__(self,
 			arch: str = "t5-small",
 			masking_ids = [],
-			learning_rate: float = 1e-5,
+			learning_rate: float = 5e-5,
 			*args,
 			**kwargs
 		):
@@ -28,6 +28,9 @@ class TextGeneration(pl.LightningModule):
 		
 		for param in self.model.shared.parameters():
 			param.requires_grad = False
+#
+		for param in self.model.shared.weight[32000:]:
+			param.requires_grad = True		
 
 	def configure_optimizers(self):
 		optimizer_grouped_parameters = [
@@ -107,16 +110,17 @@ class TextGeneration(pl.LightningModule):
 			do_sample=False,
 			num_beams=10,
 			num_return_sequences=10,
-			no_repeat_ngram_size=5,
-			top_k=200)
-		return [self.tokenizer.decode(g, skip_special_tokens=True) for g in generated]
+			no_repeat_ngram_size=3,
+			temperature=1.0)
+		return [self.tokenizer.decode(g, skip_special_tokens=False) for g in generated]
 
 if __name__=="__main__":
 	sd = torch.load("checkpoints/t5-small.pt.ckpt", map_location="cpu")["state_dict"]
 	model = TextGeneration(arch='t5-small')
 	model.load_state_dict(sd)
 	model.eval()
-	text = 'Korea | gross spending amount | $100 && Croatia | gross spending amount | $200'
+	text = '<extra_id_0> gross spending amount <extra_id_1> </s> <extra_id_1> spending date <extra_id_2> </s>'
+	text = '<extra_id_0> id <extra_id_1> </s> <extra_id_0> total revenue <extra_id_2> </s>'
 	results = model.predict(text)
 	for result in results:
 		print(result)

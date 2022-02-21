@@ -34,7 +34,7 @@ class WebNLG(Dataset):
 		input_triplets = [change_case(triplet) for triplet in sample["triple_set"]]
 		if self.is_training:
 			random.shuffle(input_triplets)
-		input_text = " && ".join(input_triplets)
+		input_text = " </s> ".join(input_triplets)
 		input_ = self.tokenizer.encode_plus(input_text, padding='max_length', truncation=True, max_length=self.max_tokens, return_tensors="pt")
 		input_ids = input_["input_ids"][0]
 		attention_mask = input_["attention_mask"][0]
