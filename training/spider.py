@@ -6,7 +6,7 @@ import torch
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader, ConcatDataset, Dataset
 from module import TextGeneration
-from datasets import Spider, numpy_collate_fn
+from datasets import Spider, SpiderDatabaseAgnostic, numpy_collate_fn
 
 parser = ArgumentParser()
 parser.add_argument('--test', action="store_true")
@@ -34,7 +34,10 @@ trainer = pl.Trainer(
 	callbacks=[checkpoint_callback],
 	gradient_clip_val=args.gradient_clip_val)
 
-train_ds = ConcatDataset([Spider(model.tokenizer, data_folder="data/spider", phase="train_spider"), Spider(model.tokenizer, data_folder="data/spider", phase="train_others")])
+train_ds = ConcatDataset([Spider(model.tokenizer, data_folder="data/spider", phase="train_spider"), 
+	Spider(model.tokenizer, data_folder="data/spider", phase="train_others")])
+
+#train_ds = Spider(model.tokenizer, data_folder="data/spider", phase="dev") 
 
 train_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
 	num_workers=0)

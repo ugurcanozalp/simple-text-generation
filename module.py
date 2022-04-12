@@ -14,7 +14,7 @@ class TextGeneration(pl.LightningModule):
 	def __init__(self,
 			arch: str = "t5-small",
 			masking_ids = [],
-			learning_rate: float = 5e-5,
+			learning_rate: float = 1e-4,
 			*args,
 			**kwargs
 		):
@@ -25,21 +25,21 @@ class TextGeneration(pl.LightningModule):
 		self.tokenizer = transformers.T5Tokenizer.from_pretrained(arch, use_fast=True)
 		# Construct the neural network here, with specific arch
 		self.model = transformers.T5ForConditionalGeneration.from_pretrained(arch)
-		
-		for param in self.model.shared.parameters():
-			param.requires_grad = False
-#
-		for param in self.model.shared.weight[32000:]:
-			param.requires_grad = True		
+
+		#for param in self.model.shared.parameters():
+		#	param.requires_grad = False
+
+		#for param in self.model.shared.weight[32000:]:
+		#	param.requires_grad = True		
 
 	def configure_optimizers(self):
 		optimizer_grouped_parameters = [
 			{
 				"params": self.model.parameters(),
-				"lr": self.hparams.learning_rate,
+				"lr": self.hparams.learning_rate
 			}
 		]
-		optimizer = torch.optim.Adam(optimizer_grouped_parameters)
+		optimizer = torch.optim.AdamW(optimizer_grouped_parameters)
 		return optimizer
 
 	def forward(self, input_ids, attention_mask, lm_labels, decoder_attention_mask):
@@ -96,7 +96,7 @@ class TextGeneration(pl.LightningModule):
 	def add_model_specific_args(parent_parser):
 		parser = ArgumentParser(parents=[parent_parser], add_help=False)
 		parser.add_argument('--arch', type=str, default='t5-small')
-		parser.add_argument('--learning_rate', type=float, default=2e-4)
+		parser.add_argument('--learning_rate', type=float, default=1e-4)
 		return parser
 
 	@torch.no_grad()
@@ -105,13 +105,14 @@ class TextGeneration(pl.LightningModule):
 		input_ids = input_["input_ids"]
 		attention_mask = input_["attention_mask"]
 		generated = self.model.generate(input_ids=input_ids, attention_mask=attention_mask, 
-			max_length=64,
-			early_stopping=True,
+			max_length=128,
+			early_stopping=False,
 			do_sample=False,
 			num_beams=10,
 			num_return_sequences=10,
 			no_repeat_ngram_size=3,
-			temperature=1.0)
+			temperature=1.0,
+			min_length=3)
 		return [self.tokenizer.decode(g, skip_special_tokens=False) for g in generated]
 
 if __name__=="__main__":
@@ -119,8 +120,9 @@ if __name__=="__main__":
 	model = TextGeneration(arch='t5-small')
 	model.load_state_dict(sd)
 	model.eval()
-	text = '<extra_id_0> gross spending amount <extra_id_1> </s> <extra_id_1> spending date <extra_id_2> </s>'
-	text = '<extra_id_0> id <extra_id_1> </s> <extra_id_0> total revenue <extra_id_2> </s>'
+	text = "What is the total number of singers ?"
+	text = "Show name, country, age for all singers ordered by age from the oldest to the youngest."
+	text = "Show the stadium name and the number of concerts in each stadium."
 	results = model.predict(text)
 	for result in results:
-		print(result)
+		print(result.replace("<unk>", " ~ ").strip())
